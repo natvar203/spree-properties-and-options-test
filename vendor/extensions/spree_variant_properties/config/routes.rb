@@ -6,4 +6,6 @@ Spree::Core::Engine.routes.draw do
       end
     end
   end
+
+  match 'products/:id/variants/:variant_id/show_variant_properties', :to => 'spree/products#show_variant_properties', :as => :show_variant_properties, :via => :get
 end

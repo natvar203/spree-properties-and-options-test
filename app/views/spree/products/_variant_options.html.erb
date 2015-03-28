@@ -6,17 +6,19 @@
         <h6 class="variant-option-type">
           <%= label_tag 'option-value-name', Spree.t(:select_a, :index => index + 1, :name => type.presentation) %>&nbsp;
           <strong class='selection'></strong>
-          <%= link_to "", "#clear", :class => "icon-remove clear-button clear-index-#{index}" %>
+          <%= link_to '', '#clear', :class => "icon-remove clear-button clear-index-#{index}" %>
         </h6>
         <ul class="variant-option-values" class='inline'>
-          <% values.sort_by(&:position).each_with_index do |value, index| %>
-            <% classes = ["option-value"] %>
+          <% values.each_with_index do |value, index| %>
+            <% classes = ['option-value'] %>
             <% count = 0 %>
             <% link = '' %>
             <% unless (variants = @product.variants_for_option_value(value)).empty? %>
               <% classes << ( variants.any? { |v| v.in_stock? } ? 'in-stock' : 'out-of-stock' ) if index == 0 %>
               <% classes << 'with-image' if value.has_image? %>
-              <% link = "updateVariantProperties(#{@product.id}, #{@product.variants_for_option_value(values[index])[count].id})" if value.option_type.position == 1 %>
+              <li class="option_<%= index %>" style="display: none"><%= @product.variants_for_option_value(values[index])[count-1].id if @product.variants_for_option_value(values[index])[count-1].present? %></li>
+              <li class="value_<%= index %>" style="display: none"><%= @product.variants_for_option_value(values[index])[count-2].id if @product.variants_for_option_value(values[index])[count-2].present?%></li>
+              <% link = "select_varient(#{@product.id}, #{@product.variants_for_option_value(values[index])[count].id}, #{index})" if value.option_type.position == 1 %>
               <li><%= link_to value.has_image? ? image_tag(value.image.url, :alt => value.presentation) : content_tag(:span, value.presentation), "#", :title => value.presentation, :class => classes.join(" "), :rel => "#{type.id}-#{value.id}", onclick: link %></li>
               <% count = count+1 %>
             <% end %>
@@ -27,11 +29,24 @@
       <% index += 1 %>
     <% end %>
 
-    <%= hidden_field_tag "products[#{@product.id}]", "", :id => "variant_id", :class => "hidden" %>
-    <%= hidden_field_tag :variant_id, "", :class => "hidden" %>
+
+
+    <%= hidden_field_tag "products[#{@product.id}]", '', :id => 'variant_id', :class => 'hidden' %>
+    <%= hidden_field_tag :variant_id, "", :class => 'hidden' %>
 
     <script type="text/javascript">
-      //<![CDATA[
+//      <![CDATA[
+      function select_varient(productPermalink, variantId, index){
+        if ($('.index-0').find('a.selected span').text() == 'Green'){
+          variantId = $('.index-1 .value_'+index).text()
+        }else if($('.index-0').find('a.selected span').text() == 'Blue'){
+          variantId = $('.index-1 .option_'+index).text()
+        }
+        $.ajax({
+          url: '/products/' + productPermalink + '/variants/' + variantId + '/show_variant_properties',
+        })
+      }
+
       var variant_options = new VariantOptions({
         options: <%== @product.variant_options_hash.to_json -%>,
         track_inventory_levels: <%==  !!Spree::Config[:track_inventory_levels] -%>,
@@ -40,7 +55,7 @@
         i18n: <%== {:out_of_stock => Spree.t(:out_of_stock), :variant_options_select => Spree.t(:variant_options_select) }.to_json -%>
       });
       $(function() {
-        url = $.urlParam('<%=SpreeVariantOptions::VariantConfig.main_option_type_label%>')
+        url = $.urlParam('<%=SpreeVariantOptions::VariantConfig.main_option_type_label%>');
         $("[title="+ url +"]").click();
       });
       //]]>
